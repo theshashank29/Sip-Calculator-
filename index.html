@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SIP Calculator with Growth Chart & Breakdown Toggle</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+.body {
+  font-family: sans-serif;
+  background: #eef2f7;
+  padding: 20px;
+  margin: 0;
+}
+
+.container {
+  max-width: 700px;
+  margin: auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  text-align: center;
+  color: #3f51b5;
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+input[type=number],
+input[type=date] {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-top: 5px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+button {
+  margin-top: 20px;
+  width: 100%;
+  padding: 10px;
+  background: #3f51b5;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #303f9f;
+}
+
+.result,
+.stats {
+  margin-top: 30px;
+  padding: 15px;
+  background: #f3f6fd;
+  border-radius: 10px;
+}
+
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.stat-box {
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  background: #ffffff;
+  box-shadow: 0 0 5px #ccc;
+}
+
+.stat-box h2 {
+  margin: 10px 0 5px;
+}
+
+canvas {
+  margin-top: 30px;
+  background: #fff;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+  display: none;
+}
+
+th,
+td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #e3eafc;
+}
+
+.info-section {
+  margin-top: 40px;
+  padding: 20px;
+  background: #f0f4ff;
+  border-left: 6px solid #3f51b5;
+  border-radius: 10px;
+}
+
+.info-section h2 {
+  margin-top: 0;
+  color: #3f51b5;
+}
+
+footer {
+  text-align: center;
+  margin-top: 40px;
+  padding: 20px;
+  background: #3f51b5;
+  color: white;
+  border-radius: 10px;
+}
+
+footer a {
+  color: #bbdefb;
+  text-decoration: underline;
+}
+</style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>SIP Calculator</h1>
+     <h1>"Elevate your wealth strategy."</h1>
+
+    <label for="sipAmount">Monthly SIP Amount (₹):</label>
+    <input type="number" id="sipAmount" value="5000" min="100" step="100" />
+
+    <label for="duration">Investment Duration (Years):</label>
+    <input type="number" id="duration" value="5" min="1" />
+
+    <label for="returnRate">Expected Annual Return (%):</label>
+    <input type="number" id="returnRate" value="12" min="1" max="30" step="0.1" />
+
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" value="2025-05-23" />
+
+    <div class="toggle">
+      <input type="checkbox" id="stepUp" />
+      <label for="stepUp">&nbsp;Top-up SIP</label>
+    </div>
+
+    <div class="toggle">
+      <input type="checkbox" id="inflation" />
+      <label for="inflation">&nbsp;Consider Inflation</label>
+    </div>
+
+    <button onclick="calculateSIP()">Calculate</button>
+
+    <div class="result">
+      <p><strong>Total Investment:</strong> ₹<span id="totalInvestment">0</span></p>
+      <p><strong>Maturity Value:</strong> ₹<span id="maturityValue">0</span></p>
+    </div>
+
+    <div class="stats">
+      <h2>SIP Performance Stats</h2>
+      <div class="stats-container">
+        <div class="stat-box">
+          <div style="font-size: 24px; color: #00bcd4;">📈</div>
+          <h2><span id="annualReturn">0</span>%</h2>
+          <p><strong>Average Annual Return</strong></p>
+          <p>Compounded growth rate of your investment</p>
+        </div>
+        <div class="stat-box">
+          <div style="font-size: 24px; color: #e91e63;">💸</div>
+          <h2>₹<span id="monthlyInvestment">0</span></h2>
+          <p><strong>Monthly Investment</strong></p>
+          <p>Amount invested each month towards your goal</p>
+        </div>
+        <div class="stat-box">
+          <div style="font-size: 24px; color: #3f51b5;">📊</div>
+          <h2><span id="totalGrowth">0</span>%</h2>
+          <p><strong>Total Growth Percentage</strong></p>
+          <p>Overall percentage growth on your principal</p>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="sipChart" width="400" height="200"></canvas>
+
+    <button onclick="toggleBreakdown()">Show Table View</button>
+
+    <table id="breakdownTable">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Invested This Month (₹)</th>
+          <th>Total Investment (₹)</th>
+          <th>Maturity Value (₹)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="info-section">
+      <h2>What is a SIP?</h2>
+      <p>A Systematic Investment Plan (SIP) allows you to invest a fixed amount regularly in a mutual fund scheme. It promotes disciplined investing and helps accumulate wealth over time by averaging out market volatility.</p>
+
+      <h2>SIP Formula</h2>
+      <p>The maturity value of SIP investments is calculated using the formula:</p>
+      <p><strong>M = P × [(1 + r)<sup>n</sup> - 1] × (1 + r) / r</strong></p>
+      <p>Where:</p>
+      <ul>
+        <li><strong>M</strong> = Maturity amount</li>
+        <li><strong>P</strong> = SIP amount</li>
+        <li><strong>r</strong> = Periodic monthly interest rate (annual rate ÷ 12 ÷ 100)</li>
+        <li><strong>n</strong> = Number of SIP installments (months)</li>
+      </ul>
+      <h2>What is an SIP Calculator? </h2>
+      <p> An SIP (Systematic Investment Plan) Calculator is a free online tool that helps estimate the future value of your SIP investments. By entering details like monthly contribution, expected return rate, and investment duration, it gives you an idea of how your money can grow over time.
+
+Though actual returns may vary, the calculator helps you compare different strategies and make informed investment decisions.</p>
+
+        <h2>How Can an SIP Return Calculator Help You? </h2>
+        <p>1. Estimate returns and time – It helps you figure out the rate of return or the time needed to reach your investment goal.<br>
+2. Compare SIP options – You can assess and compare different SIP schemes using various inputs to find the most suitable one for your needs.</p>
+    </div>
+
+    <footer>
+      <p>&copy; 2025 SIP Calculator. All rights reserved - Bhavesh Jagtap/ Indira Institute of Management, Pune /Finance consultant Intern at Prasuta Ventures Pvt Ltd</p>
+      
+    </footer>
+  </div>
+
+  <script>
+    let chart;
+    let tableVisible = false;
+
+    function toggleBreakdown() {
+      const table = document.getElementById("breakdownTable");
+      tableVisible = !tableVisible;
+      table.style.display = tableVisible ? "table" : "none";
+      event.target.innerText = tableVisible ? "Hide Table" : "Show Table";
+    }
+
+    function calculateSIP() {
+      const P = parseInt(document.getElementById('sipAmount').value);
+      const years = parseInt(document.getElementById('duration').value);
+      const rAnnual = parseFloat(document.getElementById('returnRate').value);
+
+      const months = years * 12;
+      const r = rAnnual / 100 / 12;
+
+      let totalInvestment = 0;
+      let maturityValue = 0;
+      let labels = [];
+      let principalData = [];
+      let valueData = [];
+
+      const tableBody = document.querySelector("#breakdownTable tbody");
+      tableBody.innerHTML = "";
+
+      for (let i = 1; i <= months; i++) {
+        totalInvestment += P;
+        maturityValue = P * ((Math.pow(1 + r, i) - 1) / r) * (1 + r);
+
+        labels.push("Month " + i);
+        principalData.push(totalInvestment);
+        valueData.push(maturityValue);
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>Month ${i}</td>
+          <td>₹${P.toLocaleString()}</td>
+          <td>₹${totalInvestment.toLocaleString()}</td>
+          <td>₹${Math.round(maturityValue).toLocaleString()}</td>
+        `;
+
+        tableBody.appendChild(row);
+      }
+
+      document.getElementById("totalInvestment").innerText = totalInvestment.toLocaleString();
+      document.getElementById("maturityValue").innerText = Math.round(maturityValue).toLocaleString();
+
+      const avgAnnualReturn = rAnnual.toFixed(2);
+      const growthPercentage = (((maturityValue - totalInvestment) / totalInvestment) * 100).toFixed(0);
+
+      document.getElementById("annualReturn").innerText = avgAnnualReturn;
+      document.getElementById("monthlyInvestment").innerText = P.toLocaleString();
+      document.getElementById("totalGrowth").innerText = growthPercentage;
+
+      if (chart) chart.destroy();
+
+      const ctx = document.getElementById('sipChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Principal',
+              data: principalData,
+              borderColor: '#00bcd4',
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: 'Total Value',
+              data: valueData,
+              borderColor: '#e91e63',
+              fill: false,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) {
+                  return '₹' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
